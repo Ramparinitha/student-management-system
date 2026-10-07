@@ -1,0 +1,175 @@
+package com.sims.student_management_system.service;
+
+import com.sims.student_management_system.entity.Course;
+import com.sims.student_management_system.entity.Examination;
+import com.sims.student_management_system.repository.CourseRepository;
+import com.sims.student_management_system.repository.ExaminationRepository;
+
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+public class ExaminationService {
+
+    private final ExaminationRepository examinationRepository;
+    private final CourseRepository courseRepository;
+
+    public ExaminationService(
+            ExaminationRepository examinationRepository,
+            CourseRepository courseRepository) {
+
+        this.examinationRepository = examinationRepository;
+        this.courseRepository = courseRepository;
+    }
+
+    public Examination createExamination(
+            Long courseId,
+            Examination examination) {
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() ->
+                        new RuntimeException("Course not found"));
+
+        if (!"ACTIVE".equalsIgnoreCase(course.getStatus())) {
+            throw new RuntimeException(
+                    "Cannot create examination for an inactive course");
+        }
+
+        validateExamDate(examination.getExamDate());
+
+        examination.setCourse(course);
+
+        return examinationRepository.save(examination);
+    }
+
+    public List<Examination> getAllExaminations() {
+
+        return examinationRepository.findAll();
+    }
+
+    public Examination getExaminationById(Long id) {
+
+        return examinationRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Examination not found"));
+    }
+
+    public Examination updateExamination(
+            Long id,
+            Long courseId,
+            Examination updatedExamination) {
+
+        Examination existing =
+                examinationRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Examination not found"));
+
+        Course course =
+                courseRepository.findById(courseId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Course not found"));
+
+        if (!"ACTIVE".equalsIgnoreCase(course.getStatus())) {
+            throw new RuntimeException(
+                    "Cannot assign examination to an inactive course");
+        }
+
+        validateExamDate(
+                updatedExamination.getExamDate());
+
+        existing.setCourse(course);
+
+        existing.setExamName(
+                updatedExamination.getExamName());
+
+        existing.setExamType(
+                updatedExamination.getExamType());
+
+        existing.setExamDate(
+                updatedExamination.getExamDate());
+
+        existing.setStatus(
+                updatedExamination.getStatus());
+
+        return examinationRepository.save(existing);
+    }
+
+    private void validateExamDate(LocalDate examDate) {
+
+        if (examDate == null) {
+            throw new RuntimeException(
+                    "Exam date is required");
+        }
+
+        LocalDate minimumAllowedDate =
+                LocalDate.now().plusDays(1);
+
+        if (examDate.isBefore(minimumAllowedDate)) {
+            throw new RuntimeException(
+                    "Examination must be scheduled at least 24 hours in advance");
+        }
+    }
+
+    public void deleteExamination(Long id) {
+
+        if (!examinationRepository.existsById(id)) {
+            throw new RuntimeException(
+                    "Examination not found");
+        }
+
+        examinationRepository.deleteById(id);
+    }
+
+    public List<Examination> getByCourse(
+            Long courseId) {
+
+        if (!courseRepository.existsById(courseId)) {
+            throw new RuntimeException(
+                    "Course not found");
+        }
+
+        return examinationRepository
+                .findByCourse_CourseId(courseId);
+    }
+
+    public List<Examination> getByType(
+            String examType) {
+
+        if (examType == null || examType.isBlank()) {
+            throw new RuntimeException(
+                    "Exam type is required");
+        }
+
+        return examinationRepository
+                .findByExamTypeIgnoreCase(examType);
+    }
+
+    public List<Examination> getByStatus(
+            String status) {
+
+        if (status == null || status.isBlank()) {
+            throw new RuntimeException(
+                    "Examination status is required");
+        }
+
+        return examinationRepository
+                .findByStatusIgnoreCase(status);
+    }
+
+    public List<Examination> searchByName(
+            String examName) {
+
+        if (examName == null || examName.isBlank()) {
+            throw new RuntimeException(
+                    "Exam name is required");
+        }
+
+        return examinationRepository
+                .findByExamNameContainingIgnoreCase(
+                        examName);
+    }
+}

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Student Management System</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="sidebar">
+
+    <div class="logo">
+        <div class="logo-icon">S</div>
+        <div>
+            <h2>StudentHub</h2>
+            <p>Management System</p>
+        </div>
+    </div>
+
+    <nav>
+
+        <button class="nav-item active" onclick="showSection('dashboard', this)">
+            <span>▦</span>
+            Dashboard
+        </button>
+
+        <button class="nav-item" onclick="showSection('students', this)">
+            <span>◉</span>
+            Students
+        </button>
+
+        <button class="nav-item" onclick="showSection('departments', this)">
+            <span>▣</span>
+            Departments
+        </button>
+
+    </nav>
+
+    <div class="sidebar-bottom">
+        <p>Student Information</p>
+        <small>Spring Boot + MySQL</small>
+    </div>
+
+</div>
+
+
+<div class="main">
+
+    <header>
+
+        <div>
+            <h1 id="pageTitle">Dashboard</h1>
+            <p id="pageSubtitle">Overview of your student management system</p>
+        </div>
+
+        <div class="header-badge">
+            <span class="status-dot"></span>
+            System Online
+        </div>
+
+    </header>
+
+
+    <!-- DASHBOARD -->
+
+    <section id="dashboard" class="section active-section">
+
+        <div class="stats-grid">
+
+            <div class="stat-card">
+                <div class="stat-icon">👨‍🎓</div>
+                <div>
+                    <p>Total Students</p>
+                    <h2 id="totalStudents">0</h2>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">✓</div>
+                <div>
+                    <p>Active Students</p>
+                    <h2 id="activeStudents">0</h2>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">○</div>
+                <div>
+                    <p>Inactive Students</p>
+                    <h2 id="inactiveStudents">0</h2>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">▣</div>
+                <div>
+                    <p>Departments</p>
+                    <h2 id="totalDepartments">0</h2>
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="content-card">
+
+            <div class="card-header">
+                <div>
+                    <h2>Department Overview</h2>
+                    <p>Students enrolled in each department</p>
+                </div>
+            </div>
+
+            <div id="departmentOverview"></div>
+
+        </div>
+
+    </section>
+
+
+    <!-- STUDENTS -->
+
+    <section id="students" class="section">
+
+        <div class="section-actions">
+
+            <div>
+                <h2>Students</h2>
+                <p>Manage registered students</p>
+            </div>
+
+            <button class="primary-button" onclick="openStudentModal()">
+                + Add Student
+            </button>
+
+        </div>
+
+
+        <div class="filters">
+
+            <input
+                type="text"
+                id="searchStudent"
+                placeholder="Search student by name..."
+                onkeyup="searchStudents()"
+            >
+
+            <select id="statusFilter" onchange="filterStudents()">
+                <option value="">All Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+            </select>
+
+            <select id="departmentFilter" onchange="filterByDepartment()">
+                <option value="">All Departments</option>
+            </select>
+
+            <button class="secondary-button" onclick="loadStudents()">
+                Refresh
+            </button>
+
+        </div>
+
+
+        <div class="content-card">
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                    <tr>
+                        <th>ID</th>
+                        <th>Student</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Department</th>
+                        <th>Status</th>
+                        <th>Registered</th>
+                        <th>Action</th>
+                    </tr>
+
+                    </thead>
+
+                    <tbody id="studentTableBody"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- DEPARTMENTS -->
+
+    <section id="departments" class="section">
+
+        <div class="section-actions">
+
+            <div>
+                <h2>Departments</h2>
+                <p>Manage academic departments</p>
+            </div>
+
+            <button class="primary-button" onclick="openDepartmentModal()">
+                + Add Department
+            </button>
+
+        </div>
+
+
+        <div class="content-card">
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                    <tr>
+                        <th>ID</th>
+                        <th>Department</th>
+                        <th>Code</th>
+                        <th>Created</th>
+                        <th>Action</th>
+                    </tr>
+
+                    </thead>
+
+                    <tbody id="departmentTableBody"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<!-- STUDENT MODAL -->
+
+<div id="studentModal" class="modal">
+
+    <div class="modal-content">
+
+        <div class="modal-header">
+            <div>
+                <h2>Add Student</h2>
+                <p>Register a new student</p>
+            </div>
+
+            <button onclick="closeStudentModal()" class="close-button">
+                ×
+            </button>
+        </div>
+
+        <form id="studentForm">
+
+            <label>Name</label>
+            <input
+                type="text"
+                id="studentName"
+                required
+                placeholder="Enter student name"
+            >
+
+            <label>Email</label>
+            <input
+                type="email"
+                id="studentEmail"
+                required
+                placeholder="Enter email"
+            >
+
+            <label>Phone</label>
+            <input
+                type="text"
+                id="studentPhone"
+                maxlength="10"
+                required
+                placeholder="10 digit phone number"
+            >
+
+            <label>Department</label>
+            <select id="studentDepartment" required></select>
+
+            <label>Status</label>
+            <select id="studentStatus" required>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+            </select>
+
+            <button type="submit" class="primary-button full-width">
+                Register Student
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- DEPARTMENT MODAL -->
+
+<div id="departmentModal" class="modal">
+
+    <div class="modal-content">
+
+        <div class="modal-header">
+
+            <div>
+                <h2>Add Department</h2>
+                <p>Create a new department</p>
+            </div>
+
+            <button onclick="closeDepartmentModal()" class="close-button">
+                ×
+            </button>
+
+        </div>
+
+        <form id="departmentForm">
+
+            <label>Department Name</label>
+
+            <input
+                type="text"
+                id="departmentName"
+                required
+                placeholder="Example: Computer Science"
+            >
+
+            <label>Department Code</label>
+
+            <input
+                type="text"
+                id="departmentCode"
+                required
+                placeholder="Example: CSE"
+            >
+
+            <button type="submit" class="primary-button full-width">
+                Add Department
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<div id="toast"></div>
+
+<script src="script.js"></script>
+
+</body>
+
+</html>
