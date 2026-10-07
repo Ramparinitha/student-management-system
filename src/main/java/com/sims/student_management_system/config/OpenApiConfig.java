@@ -4,6 +4,7 @@ import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,18 +16,26 @@ public class OpenApiConfig {
     public OpenAPI studentManagementOpenAPI() {
 
         return new OpenAPI()
+
                 .info(new Info()
                         .title("Student Information Management System API")
                         .description(
                                 "REST API documentation for the Student Information Management System. "
-                                + "The system provides student, department, course, enrollment, "
-                                + "attendance, examination and result management."
+                                        + "The system provides student, department, course, enrollment, "
+                                        + "attendance, examination and result management."
                         )
                         .version("1.0.0")
-                        .contact(new Contact()
-                                .name("SIMS Development Team")
+                        .contact(
+                                new Contact()
+                                        .name("SIMS Development Team")
                         )
                 )
+
+                .addSecurityItem(
+                        new SecurityRequirement()
+                                .addList("bearerAuth")
+                )
+
                 .components(
                         new Components()
                                 .addSecuritySchemes(
