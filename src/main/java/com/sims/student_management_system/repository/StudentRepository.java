@@ -28,4 +28,5 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
             String name,
             String status
     );
+    boolean existsByPhone(String phone);
 }

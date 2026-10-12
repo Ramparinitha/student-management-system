@@ -151,11 +151,7 @@ function StudentDashboard() {
                 err
             );
 
-            /*
-             * Do not block the entire portal if
-             * examination/result data contains
-             * an invalid relationship.
-             */
+        
 
             setDashboard(null);
 

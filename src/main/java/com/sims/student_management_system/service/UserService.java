@@ -38,11 +38,19 @@ public class UserService {
     @Transactional
     public User registerStudent(StudentRegistrationRequest request) {
 
-        String email = request.getEmail().trim().toLowerCase();
 
+        String email = request.getEmail().trim().toLowerCase();
+        String phone = request.getPhone().trim();
         if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new RuntimeException("Email already registered");
         }
+        boolean phoneExists = studentRepository.existsByPhone(phone);
+
+System.out.println("PHONE CHECK RESULT = " + phoneExists);
+
+if (phoneExists) {
+    throw new RuntimeException("This phone number is already registered");
+}
 
         if (studentRepository.existsByEmailIgnoreCase(email)) {
             throw new RuntimeException("Student email already registered");

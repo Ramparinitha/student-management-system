@@ -154,33 +154,72 @@ public class SecurityConfig {
                         // ENROLLMENT
                         // ==============================
 
-                        .requestMatchers(
-                                "/api/enrollments/**"
-                        ).hasAnyAuthority(
-                                "ROLE_ADMIN",
-                                "ROLE_STUDENT"
-                        )
+                        // ENROLLMENT - VIEW
+.requestMatchers(
+        HttpMethod.GET,
+        "/api/enrollments",
+        "/api/enrollments/**"
+).hasAnyAuthority(
+        "ROLE_ADMIN",
+        "ROLE_FACULTY",
+        "ROLE_STUDENT"
+)
 
+// ENROLLMENT - CREATE
+.requestMatchers(
+        HttpMethod.POST,
+        "/api/enrollments",
+        "/api/enrollments/**"
+).hasAnyAuthority(
+        "ROLE_ADMIN",
+        "ROLE_FACULTY",
+        "ROLE_STUDENT"
+)
+
+// ENROLLMENT - UPDATE / DROP
+.requestMatchers(
+        HttpMethod.PUT,
+        "/api/enrollments",
+        "/api/enrollments/**"
+).hasAnyAuthority(
+        "ROLE_ADMIN",
+        "ROLE_STUDENT"
+)
+
+// ENROLLMENT - DELETE
+.requestMatchers(
+        HttpMethod.DELETE,
+        "/api/enrollments/**"
+).hasAuthority("ROLE_ADMIN")
+
+                        
                         // ==============================
                         // ATTENDANCE - VIEW
                         // ==============================
 
                         .requestMatchers(
                                 HttpMethod.GET,
+                                "/api/attendance",
                                 "/api/attendance/**"
                         ).hasAnyAuthority(
-                                "ROLE_ADMIN",
-                                "ROLE_STUDENT"
-                        )
+        "ROLE_ADMIN",
+        "ROLE_STUDENT",
+        "ROLE_FACULTY"
+)
+
 
                         // ==============================
                         // ATTENDANCE - ADMIN
                         // ==============================
 
                         .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/attendance/**"
-                        ).hasAuthority("ROLE_ADMIN")
+        HttpMethod.POST,
+        "/api/attendance",
+        "/api/attendance/**"
+).hasAnyAuthority(
+        "ROLE_ADMIN",
+        "ROLE_FACULTY"
+)
 
                         .requestMatchers(
                                 HttpMethod.PUT,
@@ -196,13 +235,7 @@ public class SecurityConfig {
                         // EXAMINATION - VIEW
                         // ==============================
 
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/examinations/**"
-                        ).hasAnyAuthority(
-                                "ROLE_ADMIN",
-                                "ROLE_STUDENT"
-                        )
+                        .requestMatchers(HttpMethod.GET, "/api/examinations", "/api/examinations/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_STUDENT", "ROLE_FACULTY")
 
                         // ==============================
                         // EXAMINATION - ADMIN
@@ -227,22 +260,23 @@ public class SecurityConfig {
                         // RESULTS - VIEW
                         // ==============================
 
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/results/**"
-                        ).hasAnyAuthority(
-                                "ROLE_ADMIN",
-                                "ROLE_STUDENT"
-                        )
+                        
+.requestMatchers(
+        HttpMethod.GET,
+        "/api/results",
+        "/api/results/**"
+).hasAnyAuthority(
+        "ROLE_ADMIN",
+        "ROLE_STUDENT",
+        "ROLE_FACULTY"
+)
+
 
                         // ==============================
                         // RESULTS - ADMIN
                         // ==============================
 
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/results/**"
-                        ).hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/results", "/api/results/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_FACULTY")
 
                         .requestMatchers(
                                 HttpMethod.PUT,
@@ -258,13 +292,17 @@ public class SecurityConfig {
                         // COURSES - VIEW
                         // ==============================
 
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/courses/**"
-                        ).hasAnyAuthority(
-                                "ROLE_ADMIN",
-                                "ROLE_STUDENT"
-                        )
+                        
+.requestMatchers(
+        HttpMethod.GET,
+        "/api/courses",
+        "/api/courses/**"
+).hasAnyAuthority(
+        "ROLE_ADMIN",
+        "ROLE_STUDENT",
+        "ROLE_FACULTY"
+)
+
 
                         // ==============================
                         // COURSES - ADMIN
@@ -288,12 +326,24 @@ public class SecurityConfig {
                         // ==============================
                         // STUDENT MANAGEMENT - ADMIN
                         // ==============================
+// Faculty and admin can view student records.
+// Only admin can create, update, or delete students.
 
-                        .requestMatchers(
-                                "/api/students/**"
-                        ).hasAuthority("ROLE_ADMIN")
 
-                        // ==============================
+.requestMatchers(
+        HttpMethod.GET,
+        "/api/students",
+        "/api/students/**"
+).hasAnyAuthority(
+        "ROLE_ADMIN",
+        "ROLE_FACULTY"
+)
+
+.requestMatchers(
+        "/api/students",
+        "/api/students/**"
+).hasAuthority("ROLE_ADMIN")
+                       // ==============================
                         // DEPARTMENT MANAGEMENT - ADMIN
                         // ==============================
 
@@ -318,3 +368,4 @@ public class SecurityConfig {
         return http.build();
     }
 }
+

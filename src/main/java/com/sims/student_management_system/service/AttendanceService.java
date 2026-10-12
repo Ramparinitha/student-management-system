@@ -1,3 +1,4 @@
+
 package com.sims.student_management_system.service;
 
 import com.sims.student_management_system.entity.Attendance;
@@ -44,7 +45,7 @@ public class AttendanceService {
             Long courseId,
             Attendance attendance) {
 
-        checkAdmin();
+        checkFaculty();
 
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() ->
@@ -81,8 +82,7 @@ public class AttendanceService {
                         .existsByStudent_StudentIdAndCourse_CourseIdAndAttendanceDate(
                                 studentId,
                                 courseId,
-                                attendance.getAttendanceDate()
-                        );
+                                attendance.getAttendanceDate());
 
         if (alreadyExists) {
             throw new RuntimeException(
@@ -101,15 +101,14 @@ public class AttendanceService {
 
     public List<Attendance> getAllAttendance() {
 
-        if (isAdmin()) {
+        if (isAdmin() || isFaculty()) {
             return attendanceRepository.findAll();
         }
 
         Student student = getLoggedInStudent();
 
         return attendanceRepository.findByStudent_StudentId(
-                student.getStudentId()
-        );
+                student.getStudentId());
     }
 
     // ============================================================
@@ -139,14 +138,12 @@ public class AttendanceService {
         Student student =
                 studentRepository.findById(studentId)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Student not found"));
+                                new RuntimeException("Student not found"));
 
         checkStudentAccess(student);
 
         return attendanceRepository.findByStudent_StudentId(
-                studentId
-        );
+                studentId);
     }
 
     // ============================================================
@@ -160,10 +157,9 @@ public class AttendanceService {
             throw new RuntimeException("Course not found");
         }
 
-        if (isAdmin()) {
+        if (isAdmin() || isFaculty()) {
             return attendanceRepository.findByCourse_CourseId(
-                    courseId
-            );
+                    courseId);
         }
 
         Student student = getLoggedInStudent();
@@ -171,8 +167,7 @@ public class AttendanceService {
         return attendanceRepository
                 .findByStudent_StudentIdAndCourse_CourseId(
                         student.getStudentId(),
-                        courseId
-                );
+                        courseId);
     }
 
     // ============================================================
@@ -186,12 +181,10 @@ public class AttendanceService {
         Student student =
                 studentRepository.findById(studentId)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Student not found"));
+                                new RuntimeException("Student not found"));
 
         if (!courseRepository.existsById(courseId)) {
-            throw new RuntimeException(
-                    "Course not found");
+            throw new RuntimeException("Course not found");
         }
 
         checkStudentAccess(student);
@@ -199,8 +192,7 @@ public class AttendanceService {
         return attendanceRepository
                 .findByStudent_StudentIdAndCourse_CourseId(
                         studentId,
-                        courseId
-                );
+                        courseId);
     }
 
     // ============================================================
@@ -211,7 +203,7 @@ public class AttendanceService {
             Long id,
             Attendance updatedAttendance) {
 
-        checkAdmin();
+        checkFaculty();
 
         Attendance attendance =
                 attendanceRepository.findById(id)
@@ -243,8 +235,7 @@ public class AttendanceService {
                                 studentId,
                                 courseId,
                                 updatedAttendance.getAttendanceDate(),
-                                id
-                        );
+                                id);
 
         if (duplicate) {
             throw new RuntimeException(
@@ -252,12 +243,10 @@ public class AttendanceService {
         }
 
         attendance.setAttendanceDate(
-                updatedAttendance.getAttendanceDate()
-        );
+                updatedAttendance.getAttendanceDate());
 
         attendance.setPresent(
-                updatedAttendance.getPresent()
-        );
+                updatedAttendance.getPresent());
 
         return attendanceRepository.save(attendance);
     }
@@ -268,7 +257,7 @@ public class AttendanceService {
 
     public void deleteAttendance(Long id) {
 
-        checkAdmin();
+        checkFaculty();
 
         if (!attendanceRepository.existsById(id)) {
             throw new RuntimeException(
@@ -289,12 +278,10 @@ public class AttendanceService {
         Student student =
                 studentRepository.findById(studentId)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Student not found"));
+                                new RuntimeException("Student not found"));
 
         if (!courseRepository.existsById(courseId)) {
-            throw new RuntimeException(
-                    "Course not found");
+            throw new RuntimeException("Course not found");
         }
 
         checkStudentAccess(student);
@@ -303,8 +290,7 @@ public class AttendanceService {
                 attendanceRepository
                         .findByStudent_StudentIdAndCourse_CourseId(
                                 studentId,
-                                courseId
-                        );
+                                courseId);
 
         if (records.isEmpty()) {
             return 0.0;
@@ -313,8 +299,7 @@ public class AttendanceService {
         long presentCount =
                 records.stream()
                         .filter(record ->
-                                Boolean.TRUE.equals(
-                                        record.getPresent()))
+                                Boolean.TRUE.equals(record.getPresent()))
                         .count();
 
         double percentage =
@@ -335,8 +320,7 @@ public class AttendanceService {
                 enrollmentRepository
                         .findByStudent_StudentIdAndCourse_CourseId(
                                 studentId,
-                                courseId
-                        );
+                                courseId);
 
         boolean activelyEnrolled =
                 enrollments.stream()
@@ -351,14 +335,14 @@ public class AttendanceService {
     }
 
     // ============================================================
-    // ADMIN CHECK
+    // FACULTY ACCESS CHECK
     // ============================================================
 
-    private void checkAdmin() {
+    private void checkFaculty() {
 
-        if (!isAdmin()) {
+        if (!isFaculty()) {
             throw new RuntimeException(
-                    "Only ADMIN users can perform this operation");
+                    "Only FACULTY users can perform this operation");
         }
     }
 
@@ -368,12 +352,11 @@ public class AttendanceService {
 
     private void checkStudentAccess(Student student) {
 
-        if (isAdmin()) {
+        if (isAdmin() || isFaculty()) {
             return;
         }
 
-        Student loggedInStudent =
-                getLoggedInStudent();
+        Student loggedInStudent = getLoggedInStudent();
 
         if (!loggedInStudent.getStudentId()
                 .equals(student.getStudentId())) {
@@ -387,10 +370,9 @@ public class AttendanceService {
     // ATTENDANCE ACCESS CHECK
     // ============================================================
 
-    private void checkAttendanceAccess(
-            Attendance attendance) {
+    private void checkAttendanceAccess(Attendance attendance) {
 
-        if (isAdmin()) {
+        if (isAdmin() || isFaculty()) {
             return;
         }
 
@@ -399,12 +381,10 @@ public class AttendanceService {
                     "Attendance student information not found");
         }
 
-        Student loggedInStudent =
-                getLoggedInStudent();
+        Student loggedInStudent = getLoggedInStudent();
 
         if (!loggedInStudent.getStudentId()
-                .equals(
-                        attendance.getStudent().getStudentId())) {
+                .equals(attendance.getStudent().getStudentId())) {
 
             throw new RuntimeException(
                     "Access denied: You can only access your own attendance");
@@ -422,12 +402,11 @@ public class AttendanceService {
                         .getContext()
                         .getAuthentication();
 
-        if (authentication == null ||
-                authentication.getName() == null ||
-                authentication.getName().isBlank()) {
+        if (authentication == null
+                || authentication.getName() == null
+                || authentication.getName().isBlank()) {
 
-            throw new RuntimeException(
-                    "Authentication required");
+            throw new RuntimeException("Authentication required");
         }
 
         String email = authentication.getName();
@@ -450,11 +429,30 @@ public class AttendanceService {
                         .getContext()
                         .getAuthentication();
 
-        return authentication != null &&
-                authentication.getAuthorities()
+        return authentication != null
+                && authentication.getAuthorities()
                         .stream()
                         .anyMatch(authority ->
                                 "ROLE_ADMIN".equals(
+                                        authority.getAuthority()));
+    }
+
+    // ============================================================
+    // FACULTY ROLE CHECK
+    // ============================================================
+
+    private boolean isFaculty() {
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        return authentication != null
+                && authentication.getAuthorities()
+                        .stream()
+                        .anyMatch(authority ->
+                                "ROLE_FACULTY".equals(
                                         authority.getAuthority()));
     }
 }

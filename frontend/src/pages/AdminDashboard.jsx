@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import {
     LayoutDashboard,
     Users,
@@ -269,7 +269,7 @@ export default function AdminDashboard() {
     function formatDate(value) {
 
         if (!value) {
-            return "—";
+            return "â€”";
         }
 
         const date = new Date(`${value}T00:00:00`);
@@ -287,7 +287,7 @@ export default function AdminDashboard() {
             d => Number(d.departmentId) === Number(departmentId)
         );
 
-        return department?.departmentName || "—";
+        return department?.departmentName || "â€”";
     }
 
     function getStudent(studentId) {
@@ -349,7 +349,7 @@ export default function AdminDashboard() {
 
         const student = getStudentFromRecord(record);
 
-        return student?.studentId || record?.studentId || "—";
+        return student?.studentId || record?.studentId || "â€”";
     }
 
     function getCourseName(record) {
@@ -363,7 +363,7 @@ export default function AdminDashboard() {
 
         const course = getCourseFromRecord(record);
 
-        return course?.courseCode || "—";
+        return course?.courseCode || "â€”";
     }
 
     function getCourseIdFromRecord(record) {
@@ -402,22 +402,33 @@ export default function AdminDashboard() {
 
     function isStudentEnrolledInCourse(studentId, courseId) {
 
-        return activeEnrollments.some(enrollment => {
+    console.log("CHECKING ENROLLMENT:", {
+        studentId,
+        courseId,
+        activeEnrollments
+    });
 
-            const enrollmentStudentId =
-                enrollment.student?.studentId ??
-                enrollment.studentId;
+    return activeEnrollments.some(enrollment => {
 
-            const enrollmentCourseId =
-                enrollment.course?.courseId ??
-                enrollment.courseId;
+        const enrollmentStudentId =
+            enrollment.student?.studentId ??
+            enrollment.studentId;
 
-            return (
-                Number(enrollmentStudentId) === Number(studentId) &&
-                Number(enrollmentCourseId) === Number(courseId)
-            );
+        const enrollmentCourseId =
+            enrollment.course?.courseId ??
+            enrollment.courseId;
+
+        console.log("ENROLLMENT:", {
+            enrollmentStudentId,
+            enrollmentCourseId
         });
-    }
+
+        return (
+            Number(enrollmentStudentId) === Number(studentId) &&
+            Number(enrollmentCourseId) === Number(courseId)
+        );
+    });
+}
 
     function getStudentEnrolledCourses(studentId) {
 
@@ -1133,45 +1144,90 @@ export default function AdminDashboard() {
         setShowExaminationForm(true);
     }
 
-    async function saveExamination(event) {
+    
+async function saveExamination(event) {
+    event.preventDefault();
 
-        event.preventDefault();
+    try {
+        clearMessages();
 
-        try {
+        if (!examinationForm.courseId) {
+            throw new Error("Please select a course.");
+        }
 
-            clearMessages();
+        if (!examinationForm.examName.trim()) {
+            throw new Error("Exam name is required.");
+        }
 
-            if (!examinationForm.courseId) {
-                throw new Error("Please select a course.");
+        if (!examinationForm.examType.trim()) {
+            throw new Error("Exam type is required.");
+        }
+
+        if (!examinationForm.examDate) {
+            throw new Error("Exam date is required.");
+        }
+
+        const [year, month, day] =
+            examinationForm.examDate.split("-").map(Number);
+
+        const selectedDate = new Date(year, month - 1, day);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // A past examination can be marked COMPLETED.
+        // Today's and future examinations cannot.
+        if (
+            examinationForm.status === "COMPLETED" &&
+            selectedDate >= today
+        ) {
+            throw new Error(
+                "An examination can be marked COMPLETED only after its exam date has passed."
+            );
+        }
+
+        const dateIsChanging =
+            !editingExamination ||
+            String(editingExamination.examDate).split("T")[0] !==
+                examinationForm.examDate;
+
+        if (dateIsChanging) {
+            const minimumDate = new Date();
+            minimumDate.setHours(0, 0, 0, 0);
+            minimumDate.setDate(minimumDate.getDate() + 1);
+
+            if (selectedDate.getDay() === 0) {
+                throw new Error(
+                    "Examinations cannot be scheduled on Sunday."
+                );
             }
 
-            if (!examinationForm.examName.trim()) {
-                throw new Error("Exam name is required.");
+            if (selectedDate < minimumDate) {
+                throw new Error(
+                    "Examination must be scheduled at least 24 hours in advance."
+                );
             }
 
-            if (!examinationForm.examType.trim()) {
-                throw new Error("Exam type is required.");
+            const conflictingExam = examinations.find(exam =>
+                Number(exam.examId) !==
+                    Number(editingExamination?.examId) &&
+                String(exam.examDate).split("T")[0] ===
+                    examinationForm.examDate
+            );
+
+            if (conflictingExam) {
+                throw new Error(
+                    "Another examination is already scheduled on this date."
+                );
             }
+        }
 
-            if (!examinationForm.examDate) {
-    throw new Error("Exam date is required.");
-}
+        // Keep your existing code below this point:
+        // selected-course validation, request body, API call,
+        // success message, reload, and catch block.
 
-const examDateTime =
-    new Date(`${examinationForm.examDate}T00:00:00`);
 
-const minimumDateTime =
-    new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-if (examDateTime < minimumDateTime) {
-    throw new Error(
-        "Examination must be scheduled at least 24 hours in advance."
-    );
-}
-
-const selectedCourse = getCourse(
-    examinationForm.courseId
-);
+            const selectedCourse = getCourse(examinationForm.courseId);
 
             if (
                 selectedCourse &&
@@ -1271,21 +1327,31 @@ const selectedCourse = getCourse(
     // =========================================================
 
     function openAddResult() {
+    clearMessages();
 
-        clearMessages();
+    const completedExams = examinations.filter(
+        exam =>
+            String(exam.status).toUpperCase() === "COMPLETED"
+    );
 
-        setEditingResult(null);
-
-        setResultForm({
-            studentId: "",
-            examId: "",
-            marks: ""
-        });
-
-        setShowResultForm(true);
+    if (completedExams.length === 0) {
+        window.alert(
+            "Exam Not Completed\n\n" +
+            "Results can be entered only after an examination is completed."
+        );
+        return;
     }
 
-    function openEditResult(result) {
+    setEditingResult(null);
+    setResultForm({
+        studentId: "",
+        examId: "",
+        marks: ""
+    });
+    setShowResultForm(true);
+}
+
+function openEditResult(result) {
 
         clearMessages();
 
@@ -1613,20 +1679,24 @@ const selectedCourse = getCourse(
     // RESULT EXAM FILTER
     // =========================================================
 
-    const resultAvailableExaminations =
-        resultForm.studentId
-            ? examinations.filter(exam => {
+    const resultAvailableExaminations = resultForm.studentId
+    ? examinations.filter(exam => {
+          const courseId =
+              exam.course?.courseId ??
+              exam.courseId;
 
-                  const courseId =
-                      exam.course?.courseId ??
-                      exam.courseId;
+          const completed =
+              String(exam.status).toUpperCase() === "COMPLETED";
 
-                  return isStudentEnrolledInCourse(
-                      resultForm.studentId,
-                      courseId
-                  );
-              })
-            : [];
+          const enrolled =
+              isStudentEnrolledInCourse(
+                  resultForm.studentId,
+                  courseId
+              );
+
+          return completed && enrolled;
+      })
+    : [];
 
     // =========================================================
     // ATTENDANCE COURSE FILTER
@@ -1906,7 +1976,7 @@ const selectedCourse = getCourse(
                                         </td>
 
                                         <td>
-                                            {student.phone || "—"}
+                                            {student.phone || "â€”"}
                                         </td>
 
                                         <td>
@@ -2303,7 +2373,7 @@ const selectedCourse = getCourse(
                                                     <small>
                                                         {
                                                             course?.courseCode ||
-                                                            "—"
+                                                            "â€”"
                                                         }
                                                     </small>
                                                 </td>
@@ -2348,7 +2418,7 @@ const selectedCourse = getCourse(
                                                     ) : (
 
                                                         <span>
-                                                            —
+                                                            â€”
                                                         </span>
 
                                                     )}
@@ -2920,19 +2990,19 @@ function renderAttendance() {
                                             const attendanceDate =
                                                 record.attendanceDate ||
                                                 record.date ||
-                                                "—";
+                                                "â€”";
 
                                             const courseName =
                                                 getCourseName(
                                                     record
                                                 ) ||
-                                                "—";
+                                                "â€”";
 
                                             const courseCode =
                                                 getCourseCode(
                                                     record
                                                 ) ||
-                                                "—";
+                                                "â€”";
 
                                             const isPresent =
                                                 record.present ===
@@ -3229,7 +3299,7 @@ function renderAttendance() {
                                                     <small>
                                                         {
                                                             course?.courseCode ||
-                                                            "—"
+                                                            "â€”"
                                                         }
                                                     </small>
 
@@ -3238,7 +3308,7 @@ function renderAttendance() {
                                                 <td>
                                                     {
                                                         exam.examType ||
-                                                        "—"
+                                                        "â€”"
                                                     }
                                                 </td>
 
@@ -3325,12 +3395,12 @@ function renderAttendance() {
                     </div>
 
                     <button
-                        className="primary-btn"
-                        onClick={openAddResult}
-                    >
-                        <Plus size={17} />
-                        Add Result
-                    </button>
+    className="primary-btn"
+    onClick={openAddResult}
+>
+    <Plus size={17} />
+    Add Result
+</button>
 
                 </div>
 
@@ -3468,7 +3538,7 @@ function renderAttendance() {
                                                     <small>
                                                         {
                                                             course?.courseCode ||
-                                                            "—"
+                                                            "â€”"
                                                         }
                                                     </small>
 
@@ -3490,7 +3560,7 @@ function renderAttendance() {
                                                     <span className="grade-badge">
                                                         {
                                                             result.grade ||
-                                                            "—"
+                                                            "â€”"
                                                         }
                                                     </span>
 
@@ -4777,27 +4847,35 @@ function renderAttendance() {
                             <div className="form-row">
 
                                 <FormInput
-    label="Exam Date"
-    type="date"
-    min={
-        new Date(
-            Date.now() + 24 * 60 * 60 * 1000
-        )
-            .toISOString()
-            .split("T")[0]
-    }
-    value={
-        examinationForm.examDate
-    }
-    onChange={event =>
-        setExaminationForm({
-            ...examinationForm,
-            examDate:
-                event.target.value
-        })
-    }
-    required
-/>
+                                    label="Exam Date"
+                                    type="date"
+                                    min={
+                                        editingExamination &&
+                                        examinationForm.status === "COMPLETED"
+                                            ? undefined
+                                            : (() => {
+                                                  const minimumDate = new Date();
+                                                  minimumDate.setHours(0, 0, 0, 0);
+                                                  minimumDate.setDate(
+                                                      minimumDate.getDate() + 1
+                                                  );
+                                                  return minimumDate
+                                                      .toISOString()
+                                                      .split("T")[0];
+                                              })()
+                                    }
+                                    value={
+                                        examinationForm.examDate
+                                    }
+                                    onChange={event =>
+                                        setExaminationForm({
+                                            ...examinationForm,
+                                            examDate:
+                                                event.target.value
+                                        })
+                                    }
+                                    required
+                                />
 
                                 <FormSelect
                                     label="Status"
@@ -4967,7 +5045,7 @@ function renderAttendance() {
                                                         value:
                                                             exam.examId,
                                                         label:
-                                                            `${exam.examName} — ${course?.courseCode || "Course"}`
+                                                            `${exam.examName} â€” ${course?.courseCode || "Course"}`
                                                     };
                                                 }
                                             )
@@ -5391,7 +5469,7 @@ function StatusBadge({
     return (
 
         <span className={className}>
-            {status || "—"}
+            {status || "â€”"}
         </span>
     );
 }

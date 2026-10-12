@@ -1,3 +1,4 @@
+
 package com.sims.student_management_system.security;
 
 import com.sims.student_management_system.entity.User;
@@ -24,7 +25,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public JwtAuthenticationFilter(
             JwtService jwtService,
             UserRepository userRepository) {
-
         this.jwtService = jwtService;
         this.userRepository = userRepository;
     }
@@ -36,61 +36,84 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
+        System.err.println("### JWT FILTER RUNNING: "
+                + request.getMethod() + " "
+                + request.getRequestURI());
+
         String authorizationHeader =
                 request.getHeader("Authorization");
 
-        if (authorizationHeader == null ||
-                !authorizationHeader.startsWith("Bearer ")) {
+        if (authorizationHeader == null
+                || !authorizationHeader.startsWith("Bearer ")) {
+
+            System.err.println("### JWT: Bearer token missing");
 
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token =
-                authorizationHeader.substring(7).trim();
+        String token = authorizationHeader.substring(7).trim();
 
         if (token.isEmpty()) {
+            System.err.println("### JWT: Token is empty");
+
             filterChain.doFilter(request, response);
             return;
         }
 
-        try {
+        System.err.println("### JWT: Bearer token received");
 
+        try {
             if (!jwtService.isTokenValid(token)) {
+                System.err.println(
+                        "### JWT: Token invalid or expired");
+
+                SecurityContextHolder.clearContext();
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            String email =
-                    jwtService.extractEmail(token);
+            System.err.println("### JWT: Token is valid");
+
+            String email = jwtService.extractEmail(token);
 
             if (email == null || email.isBlank()) {
+                System.err.println(
+                        "### JWT: Email missing from token");
+
+                SecurityContextHolder.clearContext();
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            User user =
-                    userRepository.findByEmailIgnoreCase(email)
-                            .orElse(null);
+            User user = userRepository
+                    .findByEmailIgnoreCase(email)
+                    .orElse(null);
 
             if (user == null) {
+                System.err.println("### JWT: User not found");
+
+                SecurityContextHolder.clearContext();
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            if (user.getRole() == null ||
-                    user.getRole().isBlank()) {
+            if (user.getRole() == null
+                    || user.getRole().isBlank()) {
+
+                System.err.println("### JWT: User role missing");
+
+                SecurityContextHolder.clearContext();
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            String role =
-                    user.getRole().trim().toUpperCase();
+            String role = user.getRole()
+                    .trim()
+                    .toUpperCase();
 
             SimpleGrantedAuthority authority =
-                    new SimpleGrantedAuthority(
-                            "ROLE_" + role
-                    );
+                    new SimpleGrantedAuthority("ROLE_" + role);
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
@@ -99,11 +122,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             Collections.singletonList(authority)
                     );
 
-            SecurityContextHolder
-                    .getContext()
+            SecurityContextHolder.getContext()
                     .setAuthentication(authentication);
 
+            System.err.println("### JWT AUTHENTICATED: "
+                    + email + " | " + authority.getAuthority());
+
         } catch (Exception e) {
+            System.err.println("### JWT ERROR: "
+                    + e.getClass().getSimpleName()
+                    + " - " + e.getMessage());
 
             SecurityContextHolder.clearContext();
         }

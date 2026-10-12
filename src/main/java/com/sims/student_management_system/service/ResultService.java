@@ -47,7 +47,7 @@ public class ResultService {
             Long examId,
             Result result) {
 
-        checkAdmin();
+        checkAdminOrFaculty();
 
         if (studentId == null) {
             throw new RuntimeException(
@@ -116,17 +116,14 @@ public class ResultService {
 
     public List<Result> getAllResults() {
 
-        if (isAdmin()) {
-
+        if (isAdmin() || isFaculty()) {
             return resultRepository.findAll();
         }
 
-        Student student =
-                getLoggedInStudent();
+        Student student = getLoggedInStudent();
 
-        return resultRepository
-                .findByStudent_StudentId(
-                        student.getStudentId());
+        return resultRepository.findByStudent_StudentId(
+                student.getStudentId());
     }
 
     /*
@@ -425,28 +422,28 @@ public class ResultService {
      * =========================================================
      */
 
-    private void validateExamination(
-            Examination examination) {
-
-        if (examination == null) {
-
-            throw new RuntimeException(
-                    "Examination information is required");
-        }
-
-        if (examination.getExamId() == null) {
-
-            throw new RuntimeException(
-                    "Invalid examination ID");
-        }
-
-        if (examination.getCourse() == null ||
-                examination.getCourse().getCourseId() == null) {
-
-            throw new RuntimeException(
-                    "Examination course information not found");
-        }
-    }
+    private void validateExamination(Examination examination) {
+         if (examination == null) {
+                throw new RuntimeException(
+                        "Examination information is required");
+                }
+                if (examination.getExamId() == null) {
+                        throw new RuntimeException(
+                                "Invalid examination ID");
+                        }
+                         if (examination.getCourse() == null ||
+                         examination.getCourse().getCourseId() == null) {
+                                throw new RuntimeException(
+                                         "Examination course information not found");
+                                        }
+                                        String status = examination.getStatus();
+                                        if (status == null ||
+                                                 !status.trim().equalsIgnoreCase("COMPLETED")) {
+                                                        throw new RuntimeException(
+                                                                "Results can be entered only for completed examinations");
+                                                        }
+                                                }
+    
 
     /*
      * =========================================================
@@ -672,6 +669,22 @@ public class ResultService {
      * =========================================================
      */
 
+    private void checkAdminOrFaculty() {
+        if (!isAdmin() && !isFaculty()) {
+            throw new RuntimeException(
+                    "Only ADMIN or FACULTY users can perform this operation");
+        }
+    }
+
+    private boolean isFaculty() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        return authentication != null &&
+                authentication.getAuthorities().stream()
+                        .anyMatch(authority ->
+                                "ROLE_FACULTY".equals(authority.getAuthority()));
+    }
     private boolean isAdmin() {
 
         Authentication authentication =

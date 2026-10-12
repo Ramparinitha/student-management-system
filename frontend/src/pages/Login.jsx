@@ -71,10 +71,14 @@ function Login() {
             );
 
             if (data.role === "ADMIN") {
-                navigate("/admin");
-            } else {
-                navigate("/student");
-            }
+    navigate("/admin");
+} else if (data.role === "FACULTY") {
+    navigate("/faculty");
+} else if (data.role === "STUDENT") {
+    navigate("/student");
+} else {
+    setError("Your account role is not recognized.");
+}
 
         } catch (err) {
 

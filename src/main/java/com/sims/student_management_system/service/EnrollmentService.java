@@ -216,23 +216,35 @@ public class EnrollmentService {
         enrollmentRepository.save(enrollment);
     }
 
-    private void checkStudentAccess(
-            Long studentId) {
+    private void checkStudentAccess(Long studentId) {
 
-        if (isAdmin()) {
-            return;
-        }
+    Authentication authentication =
+            SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
 
-        Student loggedInStudent =
-                getLoggedInStudent();
-
-        if (!loggedInStudent.getStudentId()
-                .equals(studentId)) {
-
-            throw new RuntimeException(
-                    "You are not allowed to access another student's enrollments");
-        }
+    if (authentication == null) {
+        throw new RuntimeException("User is not authenticated");
     }
+
+    boolean isAdminOrFaculty =
+            authentication.getAuthorities()
+                    .stream()
+                    .anyMatch(authority ->
+                            "ROLE_ADMIN".equals(authority.getAuthority())
+                            || "ROLE_FACULTY".equals(authority.getAuthority()));
+
+    if (isAdminOrFaculty) {
+        return;
+    }
+
+    Student loggedInStudent = getLoggedInStudent();
+
+    if (!loggedInStudent.getStudentId().equals(studentId)) {
+        throw new RuntimeException(
+                "You are not allowed to access another student's enrollments");
+    }
+}
 
     private Student getLoggedInStudent() {
 
